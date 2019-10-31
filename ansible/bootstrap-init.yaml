@@ -1,0 +1,10 @@
+---
+
+- name: Bootstrap Environment
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+    - name: Install Extras Module
+      action: git repo=https://github.com/ansible/ansible-modules-extras.git dest="library/ansible-modules-extras"

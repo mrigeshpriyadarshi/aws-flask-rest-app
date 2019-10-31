@@ -1,0 +1,329 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation AutoScalingMultiAZ
+
+Parameters:
+  StackName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: m1.medium
+
+  ImageId:
+    Description: WebServer EC2 Image Id
+    Type: String
+
+  ElbSecurityGroup:
+    Description: WebServer ELB SecurityGroups
+    Type: String
+
+  WebSubnets:
+    Description: WebServer Subnets
+    Type: String
+
+  InstanceSecurityGroup:
+    Description: WebServer EC2 SecurityGroups
+    Type: String
+
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  InternalELB:
+    Description: InternalELB DNSName
+    Type: String
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: WebServerLogGroup
+      RetentionInDays: 30
+
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - Ref: ElbSecurityGroup
+      Subnets:
+        Fn::Split:
+          - ","
+          - Ref: WebSubnets
+      CrossZone: 'true'
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: TCP
+      - LoadBalancerPort: '443'
+        InstancePort: '443'
+        Protocol: TCP
+      HealthCheck:
+        Target: TCP:22
+        HealthyThreshold: '3'
+        UnhealthyThreshold: '5'
+        Interval: '10'
+        Timeout: '5'
+      Tags:
+        - Key: Appname
+          Value: !Ref StackName
+          PropagateAtLaunch: 'true'
+        - Key: Name
+          Value:
+            Fn::Join:
+            - '-'
+            - - Ref: StackName
+              - Web
+              - Instance
+          PropagateAtLaunch: 'true'
+
+  WebServerGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      Cooldown: 600
+      HealthCheckGracePeriod: 900
+      HealthCheckType: EC2
+      MetricsCollection:
+        - Granularity: 1Minute
+          Metrics:
+          - GroupMinSize
+          - GroupMaxSize
+          - GroupInServiceInstances
+      LaunchConfigurationName:
+        Ref: LaunchConfig
+      MinSize: '2'
+      MaxSize: '3'
+      DesiredCapacity: '2'
+      VPCZoneIdentifier:
+        Fn::Split:
+          - ","
+          - Ref: WebSubnets
+      LoadBalancerNames:
+      - Ref: ElasticLoadBalancer
+      Tags:
+        - Key: Appname
+          Value: !Ref StackName
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+        Count: '1'
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: '1'
+        MaxBatchSize: '1'
+        PauseTime: PT15M
+        WaitOnResourceSignals: 'true'
+
+
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      Comment: Install a simple application
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_base
+        install_base:
+          packages:
+            yum:
+              httpd: []
+              httpd-tools: []
+              mod_wsgi: []
+              wget: []
+              unzip: []
+              nmap-ncat: []
+              git: []
+              mod_http2: []
+              apr: []
+              apr-util: []
+          files:
+            /etc/httpd/conf.d/proxy.conf:
+              content: !Sub |
+                <VirtualHost *:80>
+                  ServerAdmin webmaster@example.com
+                  ServerName example.com
+                  ServerAlias www.example.com
+                  DocumentRoot /var/www/html
+                  ProxyPass /cgi-bin !
+                  ProxyPass / ${InternalELB}
+                  ProxyPassReverse / ${InternalELB}
+                  ErrorLog /var/log/httpd/example.com-error_log
+                  CustomLog /var/log/httpd/example.com-access_log combined
+                </VirtualHost>
+                <VirtualHost *:443>
+                  ServerAdmin webmaster@example.com
+                  ServerName example.com
+                  ServerAlias www.example.com
+                  DocumentRoot /var/www/html
+                  ProxyPass /cgi-bin !
+                  ProxyPass / ${InternalELB}
+                  ProxyPassReverse / ${InternalELB}
+                  ErrorLog /var/log/httpd/example.com-error_ssl_log
+                  CustomLog /var/log/httpd/example.com-access_ssl_log combined
+                </VirtualHost>
+              mode: '000644'
+              owner: root
+              group: root
+
+            /var/www/html/index.html:
+              content: !Sub |
+                "It Works!!"
+              mode: '000644'
+              owner: root
+              group: root
+            /etc/awslogs/awslogs.conf:
+              content: !Sub |
+                [general]
+                state_file = /var/lib/awslogs/agent-state
+
+                [/var/log/messages]
+                datetime_format = %b %d %H:%M:%S
+                file = /var/log/messages
+                buffer_duration = 5000
+                log_stream_name = {instance_id}-var-log-messages
+                initial_position = start_of_file
+                log_group_name = ${LogGroup}
+
+                [/var/log/cfn-init.log]
+                datetime_format = %b %d %H:%M:%S
+                file = /var/log/cfn-init.log
+                buffer_duration = 5000
+                log_stream_name = {instance_id}-var-log-cfn-init-log
+                initial_position = start_of_file
+                log_group_name = ${LogGroup}
+              mode: '000644'
+              owner: root
+              group: root
+            /etc/awslogs/awscli.conf:
+              content: !Sub |
+                [plugins]
+                cwslogs=cwslogs
+                [default]
+                region=${AWS::Region}
+              mode: '000600'
+              owner: root
+              group: root
+
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource LaunchConfig --region ${AWS::Region}
+                runas=root
+          services:
+            sysvinit:
+              httpd:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                - "/etc/cfn/cfn-hup.conf"
+                - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+              awslogsd:
+                enabled: 'true'
+                ensureRunning: 'true'
+
+    Properties:
+      KeyName:
+        Ref: KeyName
+      ImageId:
+        Ref: ImageId
+      SecurityGroups:
+      - Ref: InstanceSecurityGroup
+      InstanceType:
+        Ref: InstanceType
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -ex
+          signal () {
+            EXIT_CODE=$?
+            [ $EXIT_CODE -eq 0 ] || echo "=== Userdata FAILED ==="
+            /opt/aws/bin/cfn-signal -e $EXIT_CODE --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+          }
+
+          echo "=== Userdata Begin ==="
+
+          yum update -y aws-cfn-bootstrap
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+
+          echo "=== Userdata End ==="
+
+  WebServerScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName:
+        Ref: WebServerGroup
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+
+  WebServerScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName:
+        Ref: WebServerGroup
+      Cooldown: '60'
+      ScalingAdjustment: "-1"
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '2'
+      Threshold: '90'
+      AlarmActions:
+      - Ref: WebServerScaleUpPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value:
+          Ref: WebServerGroup
+      ComparisonOperator: GreaterThanThreshold
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '2'
+      Threshold: '70'
+      AlarmActions:
+      - Ref: WebServerScaleDownPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value:
+          Ref: WebServerGroup
+      ComparisonOperator: LessThanThreshold
+
+Outputs:
+  URL:
+    Description: The URL of the website
+    Value:
+      Fn::Join:
+      - ''
+      - - http://
+        - Fn::GetAtt:
+          - ElasticLoadBalancer
+          - DNSName

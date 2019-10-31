@@ -1,0 +1,18 @@
+---
+bootstrap:
+        StackName: scb
+        VpcCidrBlock: 10.192.0.0/16
+        Environment : production
+        WebSubnet1CIDR : 10.192.10.0/24
+        WebSubnet2CIDR : 10.192.11.0/24
+        AppSubnet1CIDR : 10.192.20.0/24
+        AppSubnet2CIDR : 10.192.21.0/24
+        DataSubnet1CIDR : 10.192.30.0/24
+        DataSubnet2CIDR : 10.192.31.0/24
+        StackAvailabilityZone : us-east-1a
+        InstanceType : t2.micro
+        AMI : ami-0b69ea66ff7391e80
+        KeyPairName : build
+        DBMasterUserPassword: scbflaskapp
+        DBMasterUsername: root
+        DBName: flaskapp
