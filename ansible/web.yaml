@@ -15,10 +15,10 @@
         all_facts: true
         
   - set_fact:
-      app_server: "{{ cloudformation[stacks.app].stack_outputs.Hostname }}"
+      app_server: "{{ cloudformation[stacks.app].stack_outputs.URL }}"
 
 - hosts: "{{ 'tag_Name_' + bootstrap.StackName + '_web_Instance' }}"
-  user: centos
+  user: ec2-user
   sudo: yes
   gather_facts: true
   vars_files:

@@ -33,16 +33,37 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
-  InternalELB:
-    Description: InternalELB DNSName
+  LogGroup:
+    Description: Web LogGroup
     Type: String
 
 Resources:
-  LogGroup:
-    Type: AWS::Logs::LogGroup
+  IamRole:
+    Type: AWS::IAM::Role
     Properties:
-      LogGroupName: WebServerLogGroup
-      RetentionInDays: 30
+      RoleName: WebServerIamRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref IamRole
+      InstanceProfileName: WebServerIamProfile
 
   ElasticLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -71,15 +92,13 @@ Resources:
       Tags:
         - Key: Appname
           Value: !Ref StackName
-          PropagateAtLaunch: 'true'
         - Key: Name
           Value:
             Fn::Join:
             - '-'
             - - Ref: StackName
               - Web
-              - Instance
-          PropagateAtLaunch: 'true'
+              - ELB
 
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -95,9 +114,9 @@ Resources:
           - GroupInServiceInstances
       LaunchConfigurationName:
         Ref: LaunchConfig
-      MinSize: '2'
-      MaxSize: '3'
-      DesiredCapacity: '2'
+      MinSize: '1'
+      MaxSize: '2'
+      DesiredCapacity: '1'
       VPCZoneIdentifier:
         Fn::Split:
           - ","
@@ -107,6 +126,14 @@ Resources:
       Tags:
         - Key: Appname
           Value: !Ref StackName
+          PropagateAtLaunch: 'true'
+        - Key: Name
+          Value:
+            Fn::Join:
+            - '-'
+            - - Ref: StackName
+              - web
+              - Instance
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
@@ -138,38 +165,11 @@ Resources:
               unzip: []
               nmap-ncat: []
               git: []
-              mod_http2: []
+              mod_ssl: []
               apr: []
               apr-util: []
+              awslogs: []
           files:
-            /etc/httpd/conf.d/proxy.conf:
-              content: !Sub |
-                <VirtualHost *:80>
-                  ServerAdmin webmaster@example.com
-                  ServerName example.com
-                  ServerAlias www.example.com
-                  DocumentRoot /var/www/html
-                  ProxyPass /cgi-bin !
-                  ProxyPass / ${InternalELB}
-                  ProxyPassReverse / ${InternalELB}
-                  ErrorLog /var/log/httpd/example.com-error_log
-                  CustomLog /var/log/httpd/example.com-access_log combined
-                </VirtualHost>
-                <VirtualHost *:443>
-                  ServerAdmin webmaster@example.com
-                  ServerName example.com
-                  ServerAlias www.example.com
-                  DocumentRoot /var/www/html
-                  ProxyPass /cgi-bin !
-                  ProxyPass / ${InternalELB}
-                  ProxyPassReverse / ${InternalELB}
-                  ErrorLog /var/log/httpd/example.com-error_ssl_log
-                  CustomLog /var/log/httpd/example.com-access_ssl_log combined
-                </VirtualHost>
-              mode: '000644'
-              owner: root
-              group: root
-
             /var/www/html/index.html:
               content: !Sub |
                 "It Works!!"
@@ -202,7 +202,7 @@ Resources:
             /etc/awslogs/awscli.conf:
               content: !Sub |
                 [plugins]
-                cwslogs=cwslogs
+                cwlogs=cwlogs
                 [default]
                 region=${AWS::Region}
               mode: '000600'
@@ -238,6 +238,7 @@ Resources:
                 ensureRunning: 'true'
 
     Properties:
+      IamInstanceProfile: !Ref InstanceProfile
       KeyName:
         Ref: KeyName
       ImageId:
@@ -255,6 +256,7 @@ Resources:
             [ $EXIT_CODE -eq 0 ] || echo "=== Userdata FAILED ==="
             /opt/aws/bin/cfn-signal -e $EXIT_CODE --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
           }
+          trap signal EXIT
 
           echo "=== Userdata Begin ==="
 

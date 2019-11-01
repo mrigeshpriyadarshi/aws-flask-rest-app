@@ -1,84 +1,19 @@
 ---
-# Tasks for app
-
-  - name: "install packages"
-    yum: name={{item}} state=present
-    with_items: 
-      - unzip
-      - wget
-      - nc
-
-  - name: get opencms
-    get_url:
-      url: "http://www.opencms.org/downloads/opencms/opencms-{{ opencms_version }}.zip"
-      dest: "/tmp/opencms-{{ opencms_version }}.zip"
-      checksum: sha256:{{opencms_checksum}}
-    tags:
-      - tomcat
-
-  - name: Extract opencms zip file
-    unarchive:
-      src: "/tmp/opencms-{{ opencms_version }}.zip"
-      dest: "/tmp"
-      copy: no
-    tags:
-      - tomcat
-
-  - find: path="{{catalina_home}}/webapps/" file_type=directory
-    register: webapps
-
-  - file: state=absent path="{{ item.path }}"
-    with_items: "{{webapps.files}}"
+  - name: flask installed
+    yum: name=python-flask state=present
 
 
-  - name: copy opencms.war to ROOT.war on remote
-    copy:
-      src: "/tmp/opencms.war"
-      dest: "{{catalina_home}}/webapps/ROOT.war"
-      owner: "{{ tomcat_user }}"
-      group: "{{ tomcat_user }}"
-      remote_src: yes
+# Example clone a repo with separate git directory
+  - git:
+      repo: https://github.com/mrigeshpriyadarshi/flaskapp-mysql.git
+      dest: /tmp/flaskapp-mysql
+      separate_git_dir: /tmp/flaskapp-mysql.git
 
-  - file:
-      path: "/tmp/opencms.war"
-      state: absent
+  - name: copy App files
+    copy: src=/tmp/flaskapp-mysql dest=/var/www 
 
-  - name: Configure Tomcat server env file
+  - name: Configure apache configuration file
     template: 
-      src: setenv.sh.j2
-      dest: "{{catalina_home}}/bin/setenv.sh"
-      owner: "{{ tomcat_user }}"
-      group: "{{ tomcat_user }}"
-    tags:
-      - tomcat
-
-  - name: Configure Auto Setup Script config
-    template: 
-      src: opencms.ini.j2
-      dest: "{{catalina_home}}/webapps/opencms.ini"
-      owner: "{{ tomcat_user }}"
-      group: "{{ tomcat_user }}"
-    tags:
-      - tomcat
-
-  - pause:
-      minutes: 3
-
-  - name: Execute Auto Setup Script
-    shell: |
-       su {{ tomcat_user }} -c "java -classpath '{{catalina_home}}/webapps/ROOT/WEB-INF/lib/*:{{catalina_home}}/webapps/ROOT/WEB-INF/classes:{{catalina_home}}/lib/*' org.opencms.setup.CmsAutoSetup -path {{catalina_home}}/webapps/opencms.ini" &
-    args:
-      chdir: "{{catalina_home}}/webapps/ROOT/WEB-INF/"
-      creates: "{{catalina_home}}/webapps/ROOT/WEB-INF/logs/setup.log"
-
-  - pause:
-      minutes: 10
-
-  - wait_for:
-      path: "{{catalina_home}}/webapps/ROOT/WEB-INF/logs/setup.log"
-      search_regex: "Shutdown completed"
-      timeout: 60
-
-  - name: Status
-    debug: 
-      msg: "Completed!"
+      src: flask.conf.j2
+      dest: /etc/httpd/conf.d/flask.conf"
+    notify: restart apache

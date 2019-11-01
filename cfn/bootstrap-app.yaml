@@ -33,12 +33,37 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
-Resources:
   LogGroup:
-    Type: AWS::Logs::LogGroup
+    Description: App LogGroup
+    Type: String
+
+Resources:
+  IamRole:
+    Type: AWS::IAM::Role
     Properties:
-      LogGroupName: AppServerLogGroup
-      RetentionInDays: 30
+      RoleName: AppServerIamRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref IamRole
+      InstanceProfileName: AppServerIamProfile
 
   ElasticLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -58,6 +83,9 @@ Resources:
       - LoadBalancerPort: '443'
         InstancePort: '443'
         Protocol: TCP
+      - LoadBalancerPort: '5000'
+        InstancePort: '5000'
+        Protocol: TCP
       HealthCheck:
         Target: TCP:22
         HealthyThreshold: '3'
@@ -67,6 +95,13 @@ Resources:
       Tags:
         - Key: Appname
           Value: !Ref StackName
+        - Key: Name
+          Value:
+            Fn::Join:
+            - '-'
+            - - Ref: StackName
+              - App
+              - ELB
 
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -100,7 +135,7 @@ Resources:
             Fn::Join:
             - '-'
             - - Ref: StackName
-              - App
+              - app
               - Instance
           PropagateAtLaunch: 'true'
     CreationPolicy:
@@ -139,66 +174,9 @@ Resources:
               apr-util: []
               awslogs: []
           files:
-            /etc/httpd/conf.d/flask.conf:
-              content: !Sub |
-
-                <VirtualHost *:80>
-                        ServerName api.example.com
-
-                        WSGIScriptAlias / /var/www/rest-app/deploy.wsgi
-                        AddType text/html .py
-
-                        <directory /var/www/rest-app>
-                                WSGIProcessGroup webtool
-                                WSGIApplicationGroup %{GLOBAL}
-                                WSGIScriptReloading On
-                                Order deny,allow
-                                Allow from all
-                        </directory>
-                </VirtualHost>
-                <VirtualHost *:443>
-                        ServerName api.example.com
-
-                        WSGIScriptAlias / /var/www/rest-app/deploy.wsgi
-                        AddType text/html .py
-
-                        <directory /var/www/rest-app>
-                                WSGIProcessGroup webtool
-                                WSGIApplicationGroup %{GLOBAL}
-                                WSGIScriptReloading On
-                                Order deny,allow
-                                Allow from all
-                        </directory>
-                </VirtualHost>
-              mode: '000644'
-              owner: root
-              group: root
-
-            /var/www/rest-app/deploy.wsgi:
-              content: !Sub |
-                import os
-                import sys
-                import site
-
-                # Add virtualenv site packages
-                site.addsitedir(os.path.join(os.path.dirname(__file__),     'env/local/lib64/python2.7/site-packages'))
-
-                # Path of execution
-                sys.path.append('/var/www/rest-app')
-
-                # # Fired up virtualenv before include application
-                # activate_env = os.path.expanduser(os.path.join(os.path.dirname(__file__), 'env/bin/activate_this.py'))
-                # execfile(activate_env, dict(__file__=activate_env))
-
-                # import my_flask_app as application
-                from app import app as application
-              mode: '000644'
-              owner: root
-              group: root
-
             /var/www/html/index.html:
               content: !Sub |
-                "It Works!!"
+                "It Works in App!!"
               mode: '000644'
               owner: root
               group: root
@@ -228,7 +206,7 @@ Resources:
             /etc/awslogs/awscli.conf:
               content: !Sub |
                 [plugins]
-                cwslogs=cwslogs
+                cwlogs=cwlogs
                 [default]
                 region=${AWS::Region}
               mode: '000600'
@@ -264,6 +242,7 @@ Resources:
                 ensureRunning: 'true'
 
     Properties:
+      IamInstanceProfile: !Ref InstanceProfile
       KeyName:
         Ref: KeyName
       ImageId:
@@ -281,24 +260,12 @@ Resources:
             [ $EXIT_CODE -eq 0 ] || echo "=== Userdata FAILED ==="
             /opt/aws/bin/cfn-signal -e $EXIT_CODE --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
           }
+          trap signal EXIT
 
           echo "=== Userdata Begin ==="
 
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
-          # useradd www
-          # groupadd www
-          usermod -a -G www ec2-user
-          chown -R root:www /var/www
-          chmod 2775 /var/www
-          find /var/www -type d -exec sudo chmod 2775 {} \;
-          find /var/www -type f -exec sudo chmod 0664 {} \;
-          easy_install pip
-          pip install flask
-          cd /tmp
-          git clone https://github.com/mrigeshpriyadarshi/flaskapp-mysql.git
-          cp -r flaskapp-mysql/* /var/www/rest-app/
-          sudo service httpd restart 
           echo "=== Userdata End ==="
 
   WebServerScaleUpPolicy:

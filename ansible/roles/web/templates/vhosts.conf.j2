@@ -39,29 +39,26 @@
   RewriteEngine On
   LogLevel info
 
-  RewriteCond %{REQUEST_URI} ^/$
-  RewriteRule (.*)$ /opencms/system/login%{REQUEST_URI} [PT]
+  # RewriteCond %{REQUEST_URI} ^/$
+  # RewriteRule (.*)$ /opencms/system/login%{REQUEST_URI} [PT]
 
-  # 7. Add opencms/ prefix if required
-  RewriteCond %{REQUEST_URI} !^/workplace.*$
-  RewriteCond %{REQUEST_URI} !^/VAADIN/.*$
-  RewriteCond %{REQUEST_URI} !^/resources/.*$
-  RewriteCond %{REQUEST_URI} !^/export/.*$
-  RewriteCond %{REQUEST_URI} !^/webdav.*$
-  RewriteRule !^/opencms/(.*)$ /opencms%{REQUEST_URI} [PT]
+  # # 7. Add opencms/ prefix if required
+  # RewriteCond %{REQUEST_URI} !^/workplace.*$
+  # RewriteCond %{REQUEST_URI} !^/VAADIN/.*$
+  # RewriteCond %{REQUEST_URI} !^/resources/.*$
+  # RewriteCond %{REQUEST_URI} !^/export/.*$
+  # RewriteCond %{REQUEST_URI} !^/webdav.*$
+  # RewriteRule !^/opencms/(.*)$ /opencms%{REQUEST_URI} [PT]
 
-  # 8. Rewrite rule to make OpenCms' static export working
-  RewriteCond %{REQUEST_URI} ^/export/.*$
-  RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}" !-f
-  RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}/index_export.html" !-f
-  RewriteRule .* /opencms/handle404?exporturi=%{REQUEST_URI}&%{QUERY_STRING} [PT]
+  # # 8. Rewrite rule to make OpenCms' static export working
+  # RewriteCond %{REQUEST_URI} ^/export/.*$
+  # RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}" !-f
+  # RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}/index_export.html" !-f
+  # RewriteRule .* /opencms/handle404?exporturi=%{REQUEST_URI}&%{QUERY_STRING} [PT]
 
   # 9. Connect to Tomcat using proxy_ajp
   ProxyPreserveHost On
-  ProxyPass /opencms ajp://{{appserver}}:8009/opencms
-  ProxyPass /webdav(.*) ajp://{{appserver}}:8009/webdav$1
-  ProxyPass /VAADIN ajp://{{appserver}}:8009/VAADIN
-  ProxyPass /workplace ajp://{{appserver}}:8009/workplace
+  ProxyPass / http://{{appserver}}:80
 
 </VirtualHost>
 
@@ -119,29 +116,30 @@
   RewriteEngine On
   LogLevel info
 
-  RewriteCond %{REQUEST_URI} ^/$
-  RewriteRule (.*)$ /opencms/system/login%{REQUEST_URI} [PT]
+  # RewriteCond %{REQUEST_URI} ^/$
+  # RewriteRule (.*)$ /opencms/system/login%{REQUEST_URI} [PT]
 
-  # 7. Add opencms/ prefix if required
-  RewriteCond %{REQUEST_URI} !^/workplace.*$
-  RewriteCond %{REQUEST_URI} !^/VAADIN/.*$
-  RewriteCond %{REQUEST_URI} !^/resources/.*$
-  RewriteCond %{REQUEST_URI} !^/export/.*$
-  RewriteCond %{REQUEST_URI} !^/webdav.*$
-  RewriteRule !^/opencms/(.*)$ /opencms%{REQUEST_URI} [PT]
+  # # 7. Add opencms/ prefix if required
+  # RewriteCond %{REQUEST_URI} !^/workplace.*$
+  # RewriteCond %{REQUEST_URI} !^/VAADIN/.*$
+  # RewriteCond %{REQUEST_URI} !^/resources/.*$
+  # RewriteCond %{REQUEST_URI} !^/export/.*$
+  # RewriteCond %{REQUEST_URI} !^/webdav.*$
+  # RewriteRule !^/opencms/(.*)$ /opencms%{REQUEST_URI} [PT]
 
-  # 8. Rewrite rule to make OpenCms' static export working
-  RewriteCond %{REQUEST_URI} ^/export/.*$
-  RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}" !-f
-  RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}/index_export.html" !-f
-  RewriteRule .* /opencms/handle404?exporturi=%{REQUEST_URI}&%{QUERY_STRING} [PT]
+  # # 8. Rewrite rule to make OpenCms' static export working
+  # RewriteCond %{REQUEST_URI} ^/export/.*$
+  # RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}" !-f
+  # RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}/index_export.html" !-f
+  # RewriteRule .* /opencms/handle404?exporturi=%{REQUEST_URI}&%{QUERY_STRING} [PT]
 
   # 9. Connect to Tomcat using proxy_ajp
   ProxyPreserveHost On
-  ProxyPass /opencms ajp://{{appserver}}:8009/opencms
-  ProxyPass /webdav(.*) ajp://{{appserver}}:8009/webdav$1
-  ProxyPass /VAADIN ajp://{{appserver}}:8009/VAADIN
-  ProxyPass /workplace ajp://{{appserver}}:8009/workplace
+  # ProxyPass /opencms ajp://{{appserver}}:8009/opencms
+  # ProxyPass /webdav(.*) ajp://{{appserver}}:8009/webdav$1
+  # ProxyPass /VAADIN ajp://{{appserver}}:8009/VAADIN
+  # ProxyPass /workplace ajp://{{appserver}}:8009/workplace
+  ProxyPass / https://{{appserver}}:443
 
 </VirtualHost>
 

@@ -1,0 +1,38 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Dynamo DB'
+Parameters:
+  StackName:
+    Description: 'Stack name'
+    Type: String
+  DBName:
+    Description: 'Name of the database'
+    Type: String
+    Default: ''
+
+Resources:
+
+  DDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DBName
+      AttributeDefinitions:
+        -
+          AttributeName: "customer-number"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "customer-number"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+
+Outputs:
+  StackName:
+    Description: 'Stack name.'
+    Value: !Sub '${AWS::StackName}'
+  DDBTable:
+    Description: 'The name of the database instance.'
+    Value: !Ref DDBTable
