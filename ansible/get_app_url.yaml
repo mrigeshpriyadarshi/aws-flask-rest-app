@@ -11,11 +11,11 @@
         region: "{{ lookup('env', 'AWS_REGION') }}"
         aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY') }}"
         aws_secret_key: "{{ lookup('env', 'AWS_SECRET_KEY') }}"
-        stack_name:  "{{ stacks.eip }}"
+        stack_name:  "{{ stacks.web }}"
         all_facts: true
         
   - set_fact:
-      app_url: "{{ cloudformation[stacks.eip].stack_outputs.AppURL }}"
+      app_url: "{{ cloudformation[stacks.web].stack_outputs.URL }}"
 
   - name: echo App URL
     debug: 

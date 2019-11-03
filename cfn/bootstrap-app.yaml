@@ -37,6 +37,25 @@ Parameters:
     Description: App LogGroup
     Type: String
 
+  DBMasterUsername:
+    Description: 'The master user name for the DB instance (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: String
+    Default: master
+
+  DBMasterUserPassword:
+    Description: 'The master password for the DB instance (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: String
+    NoEcho: true
+    Default: ''
+
+  DBClusterEndpoint: 
+    Description : "DB Cluster Endpoint"
+    Type: "String"
+
+  DBPort:
+    Description: App LogGroup
+    Type: String
+
 Resources:
   IamRole:
     Type: AWS::IAM::Role
@@ -56,6 +75,8 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchFullAccess
         - arn:aws:iam::aws:policy/AdministratorAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonDocDBFullAccess
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -149,8 +170,6 @@ Resources:
         PauseTime: PT15M
         WaitOnResourceSignals: 'true'
 
-
-
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
@@ -180,6 +199,65 @@ Resources:
               mode: '000644'
               owner: root
               group: root
+
+            /tmp/settings.py:
+              content: !Sub |
+                  import os
+
+                  os.environ['username'] = "${DBMasterUsername}"
+                  os.environ['password'] = "${DBMasterUserPassword}"
+                  os.environ['cluster_endpoint'] = "${DBClusterEndpoint}"
+                  os.environ['port'] = "${DBPort}"
+                  os.environ['log_dir'] = "/var/www/flask-crud-app"
+
+              mode: '000644'
+              owner: root
+              group: root
+
+            /tmp/flask.conf:
+              content: !Sub |
+
+                <VirtualHost *:80>
+                        ServerName api.example.com
+
+                        WSGIScriptAlias / /var/www/flask-crud-app/deploy.wsgi
+
+                        <directory /var/www/flask-crud-app>
+                                WSGIScriptReloading On
+                                Order deny,allow
+                                Allow from all
+                        </directory>
+                </VirtualHost>
+                <VirtualHost *:443>
+                        ServerName api.example.com
+
+                        WSGIScriptAlias / /var/www/flask-crud-app/deploy.wsgi
+
+                        <directory /var/www/rflask-crud-app>
+                                WSGIScriptReloading On
+                                Order deny,allow
+                                Allow from all
+                        </directory>
+                </VirtualHost>
+              mode: '000644'
+              owner: root
+              group: root
+
+            /tmp/deploy.wsgi:
+              content: !Sub |
+                import os
+                import sys
+                import site
+
+                # Path of execution
+                sys.path.insert(0,"/var/www/flask-crud-app")
+
+                # import my_flask_app as application
+                from main import app as application
+              mode: '000644'
+              owner: root
+              group: root
+
             /etc/awslogs/awslogs.conf:
               content: !Sub |
                 [general]
@@ -266,6 +344,21 @@ Resources:
 
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+
+          rm -fr /var/www/flask-crud-app
+          cd /tmp
+          git clone https://github.com/mrigeshpriyadarshi/flask-crud-app.git
+          easy_install pip
+          pip install -r /tmp/flask-crud-app/requirements.txt
+
+          mv /tmp/flask-crud-app /var/www/
+          mv /tmp/settings.py /var/www/flask-crud-app/
+          mv /tmp/deploy.wsgi /var/www/flask-crud-app/
+          mv /tmp/flask.conf /etc/httpd/conf.d/
+          chmod -R 755 /var/www/
+          chown -R apache.apache /var/www/
+          service httpd restart 
+
           echo "=== Userdata End ==="
 
   WebServerScaleUpPolicy:
@@ -328,7 +421,8 @@ Outputs:
     Value:
       Fn::Join:
       - ''
-      - - https://
+      - - http://
         - Fn::GetAtt:
           - ElasticLoadBalancer
           - DNSName
+        - "/"

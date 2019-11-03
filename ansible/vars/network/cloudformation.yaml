@@ -13,6 +13,8 @@ bootstrap:
         InstanceType : t2.micro
         AMI : ami-0b69ea66ff7391e80
         KeyPairName : build
-        DBMasterUserPassword: scbflaskapp
-        DBMasterUsername: root
-        DBName: flaskapp
+        DBMasterUserPassword: flaskapp
+        DBMasterUsername: flaskadmin
+        DBName: scbflaskapp
+        DBPort: 27017
+        DBClusterName: scbflaskapp

@@ -410,6 +410,10 @@ Resources:
         ToPort: '22'
         SourceSecurityGroupId:
           Ref: BastionNetSecurityGroup
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
       - IpProtocol: "-1"
         FromPort: "-1"
         ToPort: "-1"
@@ -497,6 +501,11 @@ Resources:
         ToPort: '805'
         SourceSecurityGroupId:
           Ref: AppNetElbSecurityGroup
+      - IpProtocol: "-1"
+        FromPort: "-1"
+        ToPort: "-1"
+        SourceSecurityGroupId:
+          Ref: WebNetSecurityGroup
       Tags:
       - Key: Name
         Value:

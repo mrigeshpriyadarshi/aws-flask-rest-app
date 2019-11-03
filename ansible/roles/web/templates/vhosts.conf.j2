@@ -58,7 +58,7 @@
 
   # 9. Connect to Tomcat using proxy_ajp
   ProxyPreserveHost On
-  ProxyPass / http://{{appserver}}:80
+  ProxyPass / {{appserver}}:80
 
 </VirtualHost>
 
@@ -139,7 +139,7 @@
   # ProxyPass /webdav(.*) ajp://{{appserver}}:8009/webdav$1
   # ProxyPass /VAADIN ajp://{{appserver}}:8009/VAADIN
   # ProxyPass /workplace ajp://{{appserver}}:8009/workplace
-  ProxyPass / https://{{appserver}}:443
+  ProxyPass / {{appserver}}:443
 
 </VirtualHost>
 

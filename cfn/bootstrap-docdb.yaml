@@ -1,0 +1,144 @@
+Description:  "AWS CloudFormation Sample Template DocumentDB_Quick_Create: Sample template showing how to create a DocumentDB DB cluster and DB instance. **WARNING** This template creates an Amazon DocumentDB resources and you will be billed for the AWS resources used if you create a stack from this template."
+
+Parameters: 
+  StackName:
+    Description: 'Stack name'
+    Type: String
+  DBPort:
+    Description: 'The allocated storage size, specified in GB (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: Number
+    Default: 27017
+  DBName:
+    Description: 'Name of the database (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: String
+    Default: ''
+  DBBackupRetentionPeriod:
+    Description: 'The number of days to keep snapshots of the database.'
+    Type: Number
+    MinValue: 0
+    MaxValue: 35
+    Default: 1
+  DBMasterUsername:
+    Description: 'The master user name for the DB instance (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: String
+    Default: master
+  DBMasterUserPassword:
+    Description: 'The master password for the DB instance (ignored when DBSnapshotIdentifier is set, value used from snapshot).'
+    Type: String
+    NoEcho: true
+    Default: ''
+  PreferredBackupWindow:
+    Description: 'The daily time range in UTC during which you want to create automated backups.'
+    Type: String
+    Default: '09:54-10:24'
+  PreferredMaintenanceWindow:
+    Description: The weekly time range (in UTC) during which system maintenance can occur.
+    Type: String
+    Default: 'sat:07:00-sat:07:30'
+  DatabaseSecurityGroup:
+    Description: DB SecurityGroup
+    Type: String
+  DataSubnets:
+    Description: Data Subnets
+    Type: String
+
+  DBClusterName: 
+    Default: "MyCluster"
+    Description : "Cluster name"
+    Type: "String"
+
+  DBInstanceClass:
+    Description : "Instance class. Please refer to: https://docs.aws.amazon.com/documentdb/latest/developerguide/db-instance-classes.html#db-instance-classes-by-region"
+    Type: "String"
+    Default: db.r5.large
+    AllowedValues:
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.r5.large
+      - db.r5.xlarge
+      - db.r5.2xlarge
+      - db.r5.4xlarge
+      - db.r5.12xlarge
+      - db.r5.24xlarge                             
+    ConstraintDescription : "Instance type must be of the ones supported for the region. Please refer to: https://docs.aws.amazon.com/documentdb/latest/developerguide/db-instance-classes.html#db-instance-classes-by-region"  
+
+Resources:
+  DBSubnetGroup: 
+    Type: "AWS::DocDB::DBSubnetGroup"
+    Properties: 
+      DBSubnetGroupDescription: !Ref 'AWS::StackName'
+      SubnetIds: !Split [',', !Ref DataSubnets]
+      Tags: 
+        - 
+           Key: "Name"
+           Value: !Ref 'AWS::StackName'
+
+  DBClusterParameterGroup:
+    Type: "AWS::DocDB::DBClusterParameterGroup"
+    Properties:
+      Description: !Ref 'AWS::StackName'
+      Family: "docdb3.6"
+      Name: !Ref 'AWS::StackName'
+      Parameters: 
+        audit_logs: "disabled"
+        tls: "disabled"
+        ttl_monitor: "enabled"
+      Tags: 
+        - 
+           Key: "Name"
+           Value: !Ref 'AWS::StackName'
+
+  DBCluster:
+      Type: "AWS::DocDB::DBCluster"
+      DeletionPolicy: Delete
+      Properties:
+        BackupRetentionPeriod: !Ref DBBackupRetentionPeriod
+        DBClusterIdentifier: !Ref DBClusterName
+        DBClusterParameterGroupName : !Ref DBClusterParameterGroup
+        DBSubnetGroupName: !Ref DBSubnetGroup
+        MasterUsername: !Ref DBMasterUsername
+        MasterUserPassword: !Ref DBMasterUserPassword
+        Port: !Ref DBPort
+        PreferredBackupWindow: !Ref PreferredBackupWindow
+        PreferredMaintenanceWindow: !Ref PreferredMaintenanceWindow
+        StorageEncrypted: true
+        VpcSecurityGroupIds:
+          - !Ref DatabaseSecurityGroup
+        
+        Tags:
+          - 
+             Key: "Name"
+             Value: !Ref 'AWS::StackName'
+
+  DBInstance:
+      Type: "AWS::DocDB::DBInstance"
+      Properties:
+        AutoMinorVersionUpgrade: true
+        DBClusterIdentifier: !Ref DBCluster
+        DBInstanceClass: !Ref DBInstanceClass
+        DBInstanceIdentifier: !Ref DBName
+        Tags:
+          - 
+             Key: "Name"
+             Value: !Ref 'AWS::StackName'
+      DependsOn: DBCluster
+
+Outputs:
+  ClusterId:
+    Value: !Ref DBCluster
+  ClusterEndpoint:
+    Value: !GetAtt DBCluster.Endpoint
+  ClusterReadEndpoint:
+    Value: !GetAtt DBCluster.ReadEndpoint
+  ClusterPort:
+    Value: !GetAtt DBCluster.Port
+  InstanceId:
+    Value: !Ref DBInstance
+  InstancePort:
+    Value: !GetAtt DBInstance.Port
+  InstanceEndpoint:
+    Value: !GetAtt DBInstance.Endpoint

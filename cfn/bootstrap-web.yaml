@@ -37,6 +37,10 @@ Parameters:
     Description: Web LogGroup
     Type: String
 
+  AppElbUrl:
+    Description: App ELB URL
+    Type: String
+
 Resources:
   IamRole:
     Type: AWS::IAM::Role
@@ -176,6 +180,157 @@ Resources:
               mode: '000644'
               owner: root
               group: root
+
+            /tmp/certificate.crt:
+              content: !Sub |
+                -----BEGIN CERTIFICATE-----
+                MIIFdjCCA14CCQCiq8e3gQU4PzANBgkqhkiG9w0BAQsFADB9MQswCQYDVQQGEwJT
+                RzESMBAGA1UECAwJU2luZ2Fwb3JlMRIwEAYDVQQHDAlTaW5nYXBvcmUxDDAKBgNV
+                BAoMA3NjYjELMAkGA1UECwwCdHMxKzApBgkqhkiG9w0BCQEWHG1yaWdlc2hwcml5
+                YWRhcnNoaUBnbWFpbC5jb20wHhcNMTkxMTAzMDYxMTU0WhcNMjkxMDMxMDYxMTU0
+                WjB9MQswCQYDVQQGEwJTRzESMBAGA1UECAwJU2luZ2Fwb3JlMRIwEAYDVQQHDAlT
+                aW5nYXBvcmUxDDAKBgNVBAoMA3NjYjELMAkGA1UECwwCdHMxKzApBgkqhkiG9w0B
+                CQEWHG1yaWdlc2hwcml5YWRhcnNoaUBnbWFpbC5jb20wggIiMA0GCSqGSIb3DQEB
+                AQUAA4ICDwAwggIKAoICAQC6iCsIZ5obUXGd4MiLfd/8T3QhEU9EIo/DveQjTblG
+                GX1SMHECiw8U7wUT9Z6rCZ6lRkq0EH7ouLf3eEfU8Snk/vZaG4o9iCvulRoj5+7j
+                fIv/xsDwOAPPG9vs6nWFxI8rvN3oBeWIq5zQ98NbO8mloSPnDNWlf0fM0UhjHDB+
+                AoybqUa6U+Qhv/Xg5AFv7DelVo4vDbYwHWtupDa6uGALqC1ZZsgrpTOZ/PzBCubZ
+                /k6af9DDP4/MH9iCfAQrKvLQCGs2UmmpTmYPpBZyGhUktmUoj+Z4Cv1Eep5spYB5
+                8ue53XJ+6/iG5IUGvgMCTddO0oEMwkWZPmuOdoAL+RaOZmUwVmrsS6DoXdlheNFL
+                835C4sl0VTPqW0RJyDS7gLd7yRSTX1m67EBQ058jPun/iMMW1YuUJTgJClF40jmO
+                LLh7b1D2PJvuJ5lgiqp2yJ7QghQn89h3J7pExlaiqmbgzdo4VDwnF2DSlseu78EQ
+                9dAR8+LKgMHgrqGh9Mm7/ekcJY18pMTd/qR7ousTB/F3uUogBS596ULKwL23uSLl
+                DAS1VEr9vo/RZC8Mp2TARJtwVGp2k4NUklsNfcOWozQpAfotcFuohNCQJ6TULtw3
+                Iw1/1glagEP0/GERpRS3EjEyqOOQIvHDtYDachHwXWbi6MLTLJqpf4pyETzWXl/Q
+                pQIDAQABMA0GCSqGSIb3DQEBCwUAA4ICAQBzpBs07OC4oha73GRMCfMzVpfwHG18
+                ybDMr4UC67pXNxCDg3Yyg4N7+s4+wdVoig3li0Au2NoeYy612tkHYpmXGtZ/mdc2
+                x9V0GUf0VAyKrumuVSohxPvM2f+Ti+rnfN4cSp5Uu6OFSO8L09qYeNkiIsETcb6j
+                z7RdxpmvwIxGr2xXUlNoYJE81fPj4yn3kZbw4f//Dd831LFL9Fc5X5gU0hgih1vg
+                0SwXeqC6DkhrXPkAfj30AEqMULEvemg9VdeMV+4GwuvWGdfI9u85L7YAPu2r/QY+
+                2BTaeEY6lhAGQPfxfJnbc31neGxGfa3ClyHwBXsNkHs8tSv4ljEpCucpzUrF2I8t
+                mDEcNP4DZ7HQjiVKwu/gGlgzok7XyLKmttO+RUb4yTVuTmuH1MTjpzvpInK4jNIq
+                c5uMr3qTcSUJIt+bQ7w8am2Jo4/TUCSEbqgijawyEah0EtVswY8Zlt6EcfQ9NhzJ
+                W7h9bAn+qSa5bqrTBrnxdT6fMBRdBoRZDD2WKJjy+ksYMb1pE530RlYcxO9d3dGd
+                PB/0pRjjEPCuN41tcFu77lZpdiJ8Sl/VAGnPArDhlMKe0JrKJXtgsXRJ+jI/s7ne
+                UL2O3jVMkCzsEDM6Hs711/QWcAAqBpsYeOKcdOMbqFNQksUZp6pFTFCe477T8qBA
+                6k6axJf06OruIQ==
+                -----END CERTIFICATE-----
+              mode: '000644'
+              owner: root
+              group: root
+
+            /tmp/certificate.key:
+              content: !Sub |
+                -----BEGIN PRIVATE KEY-----
+                MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQC6iCsIZ5obUXGd
+                4MiLfd/8T3QhEU9EIo/DveQjTblGGX1SMHECiw8U7wUT9Z6rCZ6lRkq0EH7ouLf3
+                eEfU8Snk/vZaG4o9iCvulRoj5+7jfIv/xsDwOAPPG9vs6nWFxI8rvN3oBeWIq5zQ
+                98NbO8mloSPnDNWlf0fM0UhjHDB+AoybqUa6U+Qhv/Xg5AFv7DelVo4vDbYwHWtu
+                pDa6uGALqC1ZZsgrpTOZ/PzBCubZ/k6af9DDP4/MH9iCfAQrKvLQCGs2UmmpTmYP
+                pBZyGhUktmUoj+Z4Cv1Eep5spYB58ue53XJ+6/iG5IUGvgMCTddO0oEMwkWZPmuO
+                doAL+RaOZmUwVmrsS6DoXdlheNFL835C4sl0VTPqW0RJyDS7gLd7yRSTX1m67EBQ
+                058jPun/iMMW1YuUJTgJClF40jmOLLh7b1D2PJvuJ5lgiqp2yJ7QghQn89h3J7pE
+                xlaiqmbgzdo4VDwnF2DSlseu78EQ9dAR8+LKgMHgrqGh9Mm7/ekcJY18pMTd/qR7
+                ousTB/F3uUogBS596ULKwL23uSLlDAS1VEr9vo/RZC8Mp2TARJtwVGp2k4NUklsN
+                fcOWozQpAfotcFuohNCQJ6TULtw3Iw1/1glagEP0/GERpRS3EjEyqOOQIvHDtYDa
+                chHwXWbi6MLTLJqpf4pyETzWXl/QpQIDAQABAoICAHZgaiboUMWbdyZBfCQCWz5t
+                Uf6WVJ6h7GjFvt2kurrA/GZHdcCubYDUe32COBLFhRfQNyJ1AYVBjQaRH80Ey5iX
+                MdJXffC01WSQ3UkCLPnTlalaAiGw+sHaJUUCOlkNN+sC7jUMYPHOLzPyuNjSZZMm
+                Y3mDDKb90pwqCO1U+3VMut0inU8sZDAC+dCiAkN8PohAGPXFluSMFxzdPBpdXh6n
+                uTfuYYRJUCkeg20jNQQNPucPzHXMhb5+S1Hr0F1w4S2i2h9cR8/5gA3XDaOV5+sn
+                kaUfRZzTJI3r31SF57X8sJCk97+Sk2NP7RgtSA2TRtuv/dQSCkdJdMqxa2utxWC+
+                BM3CnwQbW0vmK+hv2Bstxyl0ivS29ZpnD1fnc2U7Qv7mn/LIy9GI954fRu/xlLBp
+                IWQSBZRqTdSxw0mEP2IlFlD5DWTRC4a2XXwJi65EUS9ipvUb+4hY0BW0CRrrQPx4
+                05YaBDGn7bUi3mMTqK0kVYhizwWlAnzDJ1HQhN7bIiQfpneQy/b1bsRz3zd+a/dH
+                UjmXpYyCsYqGPo2J59uwSy3VzfQiCt45rjvagGaA4TJRqpV8ExlskOF7NIR7kfWh
+                HjHJii+89Z1s0o4SnXojT32bUFpL52tgF78Hnq7iNUgVj1EzV263ymM1k2MFOo1p
+                4dDtCPbAi8qeh3vApYsVAoIBAQDjqNNOHF05brCpWok92yaeBLcpxc3SeV31vpzS
+                Sxj5N/pa+x6OiNKnNlFBmseLcqaEPz8/C2IOugjExFrVTwTZeeiIB0+O53OeVlJK
+                JIFdL148Fhp+wIzyLGiQsQPkVsOSSGrXFQIQsyaO6Uops8/lxI3hpW5qRVDTZ0Vw
+                imWTMfxkUl5DItuOcQwwoFH7K/kRmnnDeTqxNcHGCQPGJcaGSyfj/tZEWN/Toike
+                BpAKXKcNQcYyjP6+IzdoZ+lB+OJ3gukEAhiX2nbU7B+RI4iocBGQYM0QzcerGpbJ
+                QX2+oPXU+zee/78xXFBqTeShrVKFWENwWS3wlaiNEIb3LkqLAoIBAQDRwKrQFKim
+                Uv4KXIUGsc4EakeOUcU2lL9LujXVpTWwe+df3QpszZG0X3sa/nXO4KHQ57JEOgYg
+                1/vONvrYQaxAvsq/Q7S7+Hhh7dwAQK1ZRMSpVbjkS4lMyYs06NXEmtEQQufz0qq1
+                qvnCzFpodSky8NED2Kun1xy2sk0nfaZ4mGPAmXbDD1VI1xorLusK8MehCRKIf3WN
+                88dvJJStlJzrAlMJ1vXDFfTUZWNDqkXDRHwWM4Vq76qITe7dF/jkGBQ6XQ2OwFVg
+                bic+UshXp1Tl1yeOdLjdYFruK4gjqfgFSXnTmO1Ofv7W+OlJwHW4v5YC8dp8Gd6G
+                PkdrIhjUmyePAoIBAQCVwAaGmefEkIgKTjB6jL5BMS7efmud6BGjRWfYeGeL/4Nh
+                908pSNzv+q3Gbq6Vjqvzz7qlmLI+p6Z+7/4j09+HwkXvvIdbo+mMnJFyjcK+bhsZ
+                gRyahcPwxL9fdeDugRgSECqfIgWCwKU7Wj9bYRj+taTyaaRQqRm6hXLKzW51PWsc
+                /oVcugAcGUaAceSbSFiEeM1hhEvUJ104C9P8sfp9edBai9Wbja5lgoRzaLO07S9B
+                bCOYOuCSZ43Z0og/yhwFqwnlhg9xS9XgxxUYnnwU9+rFwrcBN6sAZPQMnFS/YRdz
+                qm/y2Z2FNYj79BLROrZOWjm6HB844ujFKbrtuvhzAoIBAQDBiEjS50zY8hhuDQG8
+                tJAHKNzPJwmVG9gJkk2by+zm4twQao306BP5XmPi+0hN0pvbefzU0MjYwxAWLEp1
+                ANtjfebqZRk8mrzQdryYCxUnGblvGKYZFs0faZKlBfQ/jC08GM+V/BoAtznuD8mX
+                OgsCcooYR3HS0jsvIwLnXhsciFb53V9kCSDCrZ36nDbIiHNZVVqhUSFxEa5BEXqR
+                Ul8aw7FEke9+yiJ1Wvsk8tWdnvHzNiRzD6HEVEwB+d1u7/yyASvCPBpKeDiDW7R4
+                k+9Uhpl76pyrvf0IZmgdp/UtQ6dBoofK9ohCZ7Ywk4DLLxLFssvJ18CnEo2o/vP0
+                LxhnAoIBAGzUDJFppmKOngZbDKYmBl4OBX+ysgz1m+2XIWxNk//mkD9IXkMehpzC
+                giTaf/PlvBbLtdTMndviXybX5+IPjB6P2j+AxDBo30IsqU/rb4R4r+zxLv/r2y5G
+                f8Tw9UTE9F3p2GgUJk3yjWRpLcd4Cfv7WwDhVYjVCNrHr1EeC5yfMIXLFZ0x8Z5n
+                ZOHGxIxXR94tg+6uHMR/aSPaSd1ufpWqbicAV4YCNr62DemYrvfB/ScofutgCu/c
+                7BDNEAopJXtLeQx1JMcviMoyp7bFZQ3l0+XRu/FrBMhlb6sUwm/qx1uRHXlz2Ts9
+                OeZu2EXP/ZttlfVpBAgT3WNI/PVLcW0=
+                -----END PRIVATE KEY-----
+              mode: '000644'
+              owner: root
+              group: root
+
+            /tmp/proxy.conf:
+              content: !Sub |
+                  Listen 443
+                  DirectoryIndex index.php index.html
+
+
+                  <VirtualHost *:80>
+                      ServerName devops.scb.dev
+
+                    # Set logging behavior (optional)
+                      ErrorLog logs/errors_devops.scb.dev.log
+                      CustomLog logs/access_devops.scb.dev combined
+
+
+
+                      # Enable rewriting
+                      RewriteEngine On
+                      LogLevel info
+                      ProxyPreserveHost On
+                      ProxyPass / ${AppElbUrl}
+                      ProxyPassReverse / ${AppElbUrl}
+                  </VirtualHost>
+
+
+                  <VirtualHost *:443>
+                      ServerName devops.scb.dev
+
+                      SSLEngine on
+                      SSLCipherSuite AES256+EECDH:AES256+EDH
+                      SSLProtocol All -SSLv2 -SSLv3
+                      SSLHonorCipherOrder On
+                      SSLCompression off
+                      SSLCertificateFile /etc/httpd/conf.d/certificate.crt
+                      SSLCertificateKeyFile /etc/httpd/conf.d/certificate.key
+
+                      #Set logging behavior (optional)
+                      ErrorLog logs/errors_devops.scb.dev_ssl.log
+                      CustomLog logs/access_devops.scb.dev_ssl combined
+
+
+                      #Enable rewriting
+                      RewriteEngine On
+                      LogLevel info
+
+                      ProxyPreserveHost On
+                      ProxyPass / ${AppElbUrl}
+                      ProxyPassReverse / ${AppElbUrl}
+
+                  </VirtualHost>
+
+              mode: '000644'
+              owner: root
+              group: root
+
             /etc/awslogs/awslogs.conf:
               content: !Sub |
                 [general]
@@ -263,6 +418,17 @@ Resources:
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
 
+          mv /tmp/certificate.crt /etc/httpd/conf.d/certificate.crt
+          mv /tmp/certificate.key /etc/httpd/conf.d/certificate.key
+          mv /tmp/proxy.conf /etc/httpd/conf.d/
+          rm -fr /etc/httpd/conf.d/ssl.conf*
+
+          chmod -R 755 /etc/httpd/conf.d/certificate.key
+          chmod -R 755 /etc/httpd/conf.d/certificate.crt
+          chmod -R 755 /etc/httpd/conf.d/proxy.conf
+
+          service httpd restart 
+
           echo "=== Userdata End ==="
 
   WebServerScaleUpPolicy:
@@ -329,3 +495,4 @@ Outputs:
         - Fn::GetAtt:
           - ElasticLoadBalancer
           - DNSName
+        - "/"

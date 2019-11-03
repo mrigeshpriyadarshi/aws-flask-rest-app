@@ -1,4 +1,0 @@
----
-# Handlers for app
-  - name: restart apache
-    service: name=httpd state=restarted

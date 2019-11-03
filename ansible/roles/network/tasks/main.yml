@@ -42,6 +42,21 @@
 #   register: DbInstanceStack
 #   when: stack_action == "create" or stack_action == "create-db"
 
+# - name: Run DB Instance Creation CloudFormation Stack
+#   cloudformation:
+#     stack_name: "{{ stacks.db }}"
+#     region: "{{ lookup('env', 'AWS_REGION') }}"
+#     aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY') }}"
+#     aws_secret_key: "{{ lookup('env', 'AWS_SECRET_KEY') }}"
+#     state: present
+#     template: "../cfn/bootstrap-dynamodb.yaml"
+#     template_parameters:
+#       StackName : "{{ bootstrap.StackName }}"
+#       DBName : "{{ bootstrap.DBName }}"
+#   register: DbInstanceStack
+#   when: stack_action == "create" or stack_action == "create-db"
+
+
 - name: Run DB Instance Creation CloudFormation Stack
   cloudformation:
     stack_name: "{{ stacks.db }}"
@@ -49,10 +64,16 @@
     aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY') }}"
     aws_secret_key: "{{ lookup('env', 'AWS_SECRET_KEY') }}"
     state: present
-    template: "../cfn/bootstrap-dynamodb.yaml"
+    template: "../cfn/bootstrap-docdb.yaml"
     template_parameters:
       StackName : "{{ bootstrap.StackName }}"
       DBName : "{{ bootstrap.DBName }}"
+      DatabaseSecurityGroup : "{{ BootstrapNetStack.stack_outputs.DataNetSecurityGroup }}"
+      DataSubnets : "{{ BootstrapNetStack.stack_outputs.DataSubnets }}"
+      DBMasterUserPassword : "{{ bootstrap.DBMasterUserPassword }}"
+      DBMasterUsername : "{{ bootstrap.DBMasterUsername }}"
+      DBPort: "{{ bootstrap.DBPort }}"
+      DBClusterName: "{{ bootstrap.DBClusterName }}"
   register: DbInstanceStack
   when: stack_action == "create" or stack_action == "create-db"
 
@@ -73,6 +94,10 @@
       ImageId : "{{ bootstrap.AMI }}"
       KeyName : "{{ bootstrap.KeyPairName }}"
       LogGroup: "{{ BootstrapNetStack.stack_outputs.AppServerLogGroup }}"
+      DBMasterUserPassword : "{{ bootstrap.DBMasterUserPassword }}"
+      DBMasterUsername : "{{ bootstrap.DBMasterUsername }}"
+      DBPort: "{{ bootstrap.DBPort }}"
+      DBClusterEndpoint : "{{ DbInstanceStack.stack_outputs.ClusterEndpoint }}"
   register: AppInstanceStack
   when: stack_action == "create" or stack_action == "create-app"
 
@@ -93,6 +118,7 @@
       ImageId : "{{ bootstrap.AMI }}"
       KeyName : "{{ bootstrap.KeyPairName }}"
       LogGroup: "{{ BootstrapNetStack.stack_outputs.WebServerLogGroup }}"
+      AppElbUrl: "{{ AppInstanceStack.stack_outputs.URL }}"
   register: WebInstanceStack
   when: stack_action == "create" or stack_action == "create-web"
 
@@ -123,7 +149,7 @@
     aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY') }}"
     aws_secret_key: "{{ lookup('env', 'AWS_SECRET_KEY') }}"
     state: absent
-    template: "../cfn/bootstrap-db.yaml"
+    template: "../cfn/bootstrap-docdb.yaml"
   when: stack_action == "delete" or stack_action == "delete-db"
 
 - name: Remove Bootstrap Net CloudFormation Stack

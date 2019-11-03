@@ -1,8 +1,7 @@
-# aws_opencms
+# aws-flask-rest-app
 
-This application is an attempt to create opencms on AWS with three tiered architecture. It comprises cloudformation to create the stack. The automation is enabled through ansible starting from stack creation to application deployment. 
+This application is an attempt to create Full Stack Application on AWS with three tiered architecture. It comprises cloudformation to create the stack. The automation is enabled through ansible starting from stack creation to application deployment. 
 
-Setup [Opencms](http://www.opencms.org/en/)  on your AWS with Ansible and Cloudformation, you can install it from your laptop by making itself a Workstation
 
 If you are fluent with [Ansible](http://docs.ansible.com/ansible/intro_getting_started.html) and [Cloudformation](http://odecee.com.au/cloudformation-and-ansible/), you know where to look and what to do. If you are new to Ansible and cloudformation, just follow along with step-by-step instructions below.
 
@@ -19,12 +18,12 @@ If you are fluent with [Ansible](http://docs.ansible.com/ansible/intro_getting_s
 
 ## Simple installation
 
-Clone the aws_opencms repo, and start up Ansible:
+Clone the aws-flask-rest-app repo, and start up Ansible:
 
 ```bash
 
-git clone https://github.com/mrigeshpriyadarshi/aws_opencms.git
-cd aws_opencms/ansible
+git clone https://github.com/mrigeshpriyadarshi/aws-flask-rest-app.git
+cd aws-flask-rest-app/ansible
 
 ```
 
@@ -48,28 +47,30 @@ We have divided the whole implentation in four roles:-
 
 * network - It would create the AWS infrastructure.
 
-* db - It would install and configure MySQL on DB instance.
-
-* app - It would install and configure JAVA, Tomcat and Opencms on App instance
-
-* web - It would install and configure Apache on Web instance
-
 
 Update [Ansible Vars](./vars/network/cloudformation.yaml) YAML with relevant data.
 
 ```
 ---
 bootstrap:
-        StackName: mediacorp
-        VpcCidrBlock: 10.11.0.0/24
+        StackName: scb
+        VpcCidrBlock: 10.192.0.0/16
         Environment : production
-        WebSubnetCIDR : 10.11.0.0/26
-        AppSubnetCIDR : 10.11.0.64/26
-        DataSubnetCIDR : 10.11.0.128/25
+        WebSubnet1CIDR : 10.192.10.0/24
+        WebSubnet2CIDR : 10.192.11.0/24
+        AppSubnet1CIDR : 10.192.20.0/24
+        AppSubnet2CIDR : 10.192.21.0/24
+        DataSubnet1CIDR : 10.192.30.0/24
+        DataSubnet2CIDR : 10.192.31.0/24
         StackAvailabilityZone : us-east-1a
         InstanceType : t2.micro
-        AMI : ami-46c1b650
+        AMI : ami-0b69ea66ff7391e80
         KeyPairName : build
+        DBMasterUserPassword: flaskapp
+        DBMasterUsername: flaskadmin
+        DBName: scbflaskapp
+        DBPort: 27017
+        DBClusterName: scbflaskapp
 
 ```
 
@@ -112,30 +113,21 @@ ansible-playbook -i bootstrap.ini bootstrap-init.yaml
 # To create Infrastructure comprising 3 instances inside a VPC with respective subnets, it uses `bootstrap-network.json` CFN to create the stack. 
 ansible-playbook -i bootstrap.ini cloudformation.yaml --extra-vars='stack=network stack_action=create'
 
-# To create Install and configure Database Server 
-ansible-playbook  db.yaml
-
-# To create Install and configure OpenCMS Server 
-ansible-playbook  app.yaml
-
-# To create Install and configure Web Server 
-ansible-playbook  web.yaml
-
 # After all execution, generate the App URL which needs to accessed
 ansible-playbook -i bootstrap.ini get_app_url.yaml 
 
 ```
 
-These command will create whole stack and then install the OpenCMS. After Completion you can hit the Webserver IP in browser.
+These command will create whole stack and then install the Application [flask-crud-app](https://github.com/mrigeshpriyadarshi/flask-crud-app). After Completion you can hit the Webserver IP in browser.
 
-If something went wrong, jump to [Troubleshooting](https://github.com/mrigeshpriyadarshi/aws_opencms#common-problems-and-solutions) section below.
+If something went wrong, jump to [Troubleshooting](https://github.com/mrigeshpriyadarshi/aws-flask-rest-app#common-problems-and-solutions) section below.
 
 
 ## Customize your installation
 
 To evaluate this app , please consider using the following boxes for best results:
 
-* ami-46c1b650 for CentOS 7.4
+* ami-0b69ea66ff7391e80 for Amazon Linux 2
 
 
 ## Common problems and solutions
@@ -157,6 +149,10 @@ ansible-playbook -i bootstrap.ini cloudformation.yaml --extra-vars='stack=networ
 
 ```
 
+## Create SSL certificate
+```
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout devops.scb.com.key.pem -out devops.scb.com.cert.pem
+```
 
 ## Contribute
 
